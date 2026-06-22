@@ -156,6 +156,11 @@ Expected:
 ## 2. Configure RViz
 
 RViz should be opened before starting the live replanner.
+```bash
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+ros2 launch lbr_bringup move_group.launch.py model:=iiwa7 mode:=gazebo rviz:=true
+```
 
 Use fixed frame:
 
