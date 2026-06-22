@@ -1,0 +1,35 @@
+# =============================================================================
+# Python dependencies for the Robot Vision system (src/robot_vision_v3.py)
+#   pip install -r requirements.txt
+#
+# NOTE: ROS2 (rclpy etc.) is NOT installed via pip — it comes from your ROS2
+#       distribution. See ros2_ws/README.md for the bridge dependencies.
+# =============================================================================
+
+# ---- Core ----
+numpy>=1.24.0
+opencv-python>=4.8.0
+scipy>=1.11.0
+
+# ---- ML / AI (detection models) ----
+ultralytics>=8.0.0        # YOLO11 pose
+mediapipe>=0.10.0         # hand landmarks
+scikit-learn>=1.3.0       # anomaly detection (Isolation Forest)
+torch>=2.0.0              # YOLO backend
+
+# ---- Config & Web dashboard ----
+pydantic>=2.0.0
+pyyaml>=6.0
+fastapi>=0.100.0
+uvicorn>=0.23.0
+websockets>=11.0
+
+# ---- Industrial safety ----
+pymodbus>=3.5.0           # Safety PLC over Modbus TCP
+
+# ---- Development (optional) ----
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+# black>=23.0.0
+# ruff>=0.1.0
+# mypy>=1.5.0

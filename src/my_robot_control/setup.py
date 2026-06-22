@@ -28,6 +28,8 @@ setup(
         'trajectory_visualizer = my_robot_control.trajectory_visualizer:main',
         'planned_trajectory = my_robot_control.planned_trajectory:main',
         'welding_line_ik = my_robot_control.welding_line_ik:main',
+        'hand_obstacle_to_planning_scene = my_robot_control.hand_obstacle_to_planning_scene:main',
+        'welding_replanner = my_robot_control.welding_replanner:main',
         ],
     },
 )

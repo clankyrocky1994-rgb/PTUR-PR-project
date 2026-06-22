@@ -1,15 +1,60 @@
+# ROS 2 / colcon
 build/
 install/
 log/
-.cache/
+
+# Python
 __pycache__/
-*.pyc
-*.bag
-*.db3
-*.sqlite3
-*.mp4
-*.avi
-*.zip
-*.tar.gz
+*.py[cod]
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+vision_venv/
+robot_vision_app/venv/
+robot_vision_app/.venv/
+
+# IDE / OS
 .vscode/
 .idea/
+.DS_Store
+*.swp
+
+# Archives / temp
+*.zip
+*.tar
+*.tar.gz
+*.7z
+tmp/
+temp/
+
+# Robot vision heavy files / datasets / captures
+robot_vision_app/models/*.pt
+robot_vision_app/models/*.pth
+robot_vision_app/models/*.onnx
+robot_vision_app/models/*.engine
+robot_vision_app/models/*.bin
+robot_vision_app/data/
+robot_vision_app/datasets/
+robot_vision_app/output/
+robot_vision_app/outputs/
+robot_vision_app/runs/
+robot_vision_app/videos/
+robot_vision_app/images/
+robot_vision_app/*.bag
+robot_vision_app/*.db3
+
+# ROS bags
+*.bag
+*.db3
+*.mcap
+
+# Local env files
+.env
+*.local

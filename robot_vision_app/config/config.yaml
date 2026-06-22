@@ -1,0 +1,63 @@
+# =============================================================================
+# Robot Vision Dashboard — configuration
+# -----------------------------------------------------------------------------
+# All relative paths are resolved against the project root (the folder that
+# contains src/, models/, config/). Run the app from the project root:
+#     python src/robot_vision_v3.py --config config/config.yaml
+# Any value here can be overridden by a matching command-line flag.
+# =============================================================================
+
+camera:
+  id: "0"                 # camera index (0 = default webcam) or device path
+  width: 1280
+  height: 720
+  fps: 30
+  calibration_file: null  # path to a .npz from camera calibration (removes distortion)
+  mirror: true            # flip horizontally (selfie view)
+
+safety:
+  emergency_zone_mm: 200      # < this distance -> STOP
+  warning_zone_mm: 500        # < this distance -> SLOW
+  predictive_horizon_ms: 500  # how far ahead the trajectory is extrapolated
+  plc_ip: null                # Safety PLC IP for hardware E-Stop, e.g. "192.168.1.100"
+  plc_port: 502               # Modbus TCP port
+  enable_hardware_estop: false
+
+models:
+  yolo:
+    path: "models/yolo11n-pose.pt"   # body-pose model (auto-downloads if missing)
+    device: "auto"                   # auto | cpu | cuda
+    imgsz: 480
+    conf: 0.5
+    skip_frames: 2                   # run YOLO every Nth frame (perf)
+    use_multiprocessing: false
+  mediapipe:
+    max_hands: 2
+    min_conf: 0.5
+
+telemetry:
+  udp_target: "127.0.0.1:9090"  # where to stream JSON telemetry (the ROS2 bridge listens here)
+  csv_dir: "./telemetry"        # per-hand CSV log
+  rate_limit_hz: 10             # telemetry packets per second
+  enable_blackbox: true         # record synchronized MP4 + CSV for incident review
+  blackbox_dir: "./blackbox"
+  blackbox_max_gb: 10.0         # auto-delete oldest recordings above this budget
+
+web_dashboard:
+  enabled: true                 # browser dashboard at http://<host>:<port>
+  host: "0.0.0.0"
+  port: 8080
+
+anomaly:
+  enabled: false                # Isolation Forest detection of erratic motion
+  contamination: 0.05
+  window_size: 100
+
+multicamera:
+  enabled: false                # triangulate 3D from 2+ calibrated cameras
+  cameras: []
+  extrinsics_files: []
+
+snapshot_dir: "./snapshots"
+no_show: false                  # true = headless (no OpenCV window), for servers
+log_level: "INFO"               # DEBUG | INFO | WARNING | ERROR | CRITICAL
