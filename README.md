@@ -1,212 +1,283 @@
-# Robot Welding Trajectory Project
+# Robot Vision Welding Replanner
 
-This project contains a ROS 2 package for planning and visualizing a simple welding-like Cartesian trajectory for a KUKA LBR robot.
+ROS 2 Jazzy project for KUKA LBR / iiwa7 welding trajectory visualization and live obstacle-aware replanning using hand detection from a camera.
 
-The trajectory is defined by XYZ points, converted to joint-space using MoveIt IK, visualized in RViz, and optionally executed through `joint_trajectory_controller`.
+The system connects:
 
-## Environment
+* KUKA LBR / iiwa7 simulation in Gazebo
+* MoveIt IK service
+* ROS 2 hand detection bridge
+* live welding trajectory replanner
+* RViz visualization of hand position and replanned path
 
-Tested with:
+## Workspace
 
-* Ubuntu 24.04
-* ROS 2 Jazzy
-* Gazebo
-* RViz
-* MoveIt
-* lbr_fri_ros2_stack
-* Robot model: `iiwa7`
-
-## Repository structure
+Main ROS 2 workspace:
 
 ```bash
-project/
-├── README.md
-├── .gitignore
-└── src/
-    └── my_robot_control/
+/home/daun/project
 ```
 
-## 1. Install ROS 2 Jazzy
-
-Install ROS 2 Jazzy Desktop for Ubuntu 24.04.
-
-After installation, source ROS:
+KUKA LBR stack workspace:
 
 ```bash
-source /opt/ros/jazzy/setup.bash
+/home/daun/dep/lbr-stack
 ```
 
-Optional:
+Robot vision app:
 
 ```bash
-echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
+/home/daun/project/robot_vision_app
 ```
 
-## 2. Install ROS tools
+## Packages
 
-```bash
-sudo apt update
-sudo apt install ros-dev-tools python3-colcon-common-extensions python3-vcstool python3-rosdep -y
-```
-
-If `rosdep` is not initialized:
-
-```bash
-sudo rosdep init
-rosdep update
-```
-
-## 3. Install and build lbr_fri_ros2_stack
-
-Create a workspace for the LBR stack:
-
-```bash
-mkdir -p ~/prj/lbr-stack/src
-cd ~/prj/lbr-stack
-source /opt/ros/jazzy/setup.bash
-```
-
-Clone the LBR stack:
-
-```bash
-git clone https://github.com/lbr-stack/lbr_fri_ros2_stack.git -b jazzy src/lbr_fri_ros2_stack
-```
-
-Import dependencies:
-
-```bash
-export FRI_CLIENT_VERSION=1.15
-vcs import src < src/lbr_fri_ros2_stack/lbr_fri_ros2_stack/repos-fri-${FRI_CLIENT_VERSION}.yaml
-```
-
-Install dependencies:
-
-```bash
-rosdep install --from-paths src -i -r -y
-```
-
-Build:
-
-```bash
-colcon build --symlink-install
-source install/setup.bash
-```
-
-## 4. Clone this project
-
-```bash
-cd ~
-git clone https://github.com/clankyrocky1994-rgb/test.git project
-cd ~/project
-```
-
-Source ROS and the LBR stack:
-
-```bash
-source /opt/ros/jazzy/setup.bash
-source ~/prj/lbr-stack/install/setup.bash
-```
-
-Install dependencies for this project:
-
-```bash
-rosdep install --from-paths src -i -r -y
-```
-
-Build this project:
-
-```bash
-colcon build --symlink-install
-source install/setup.bash
-```
-
-## 5. Run Gazebo
-
-Terminal 1:
-
-```bash
-cd ~/prj/lbr-stack
-source /opt/ros/jazzy/setup.bash
-source install/setup.bash
-ros2 launch lbr_bringup gazebo.launch.py model:=iiwa7
-```
-
-## 6. Run MoveIt and RViz
-
-Terminal 2:
-
-```bash
-cd ~/prj/lbr-stack
-source /opt/ros/jazzy/setup.bash
-source install/setup.bash
-ros2 launch lbr_bringup move_group.launch.py model:=iiwa7 mode:=gazebo rviz:=true
-```
-
-## 7. Visualize the welding trajectory
-
-Terminal 3:
-
-```bash
-cd ~/project
-source /opt/ros/jazzy/setup.bash
-source ~/prj/lbr-stack/install/setup.bash
-source install/setup.bash
-ros2 run my_robot_control welding_line_ik
-```
-
-In RViz, add the marker topics:
+This repository contains:
 
 ```text
-Add → By topic → /welding_planned_line → Marker
-Add → By topic → /welding_points → Marker
+src/my_robot_control
+src/robot_vision_msgs
+src/robot_vision_ros2
+robot_vision_app
 ```
 
-## 8. Execute the trajectory
+Main nodes:
 
-Before execution, check that the trajectory controller action exists:
+```text
+my_robot_control/welding_replanner
+my_robot_control/live_welding_replanner
+robot_vision_ros2/hand_bridge.launch.py
+```
+
+At the moment, `welding_replanner` entry point runs the live welding replanner.
+
+## Build
 
 ```bash
-ros2 action list | grep trajectory
+cd /home/daun/project
+source /opt/ros/jazzy/setup.bash
+
+colcon build --symlink-install
+source install/setup.bash
 ```
 
-Expected:
+For rebuilding only the control package:
+
+```bash
+cd /home/daun/project
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+colcon build --symlink-install --packages-select my_robot_control
+source install/setup.bash
+```
+
+## Full Run Procedure
+
+### 1. Start KUKA / Gazebo / MoveIt
+
+In terminal 1:
+
+```bash
+cd /home/daun/dep/lbr-stack
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+ros2 launch lbr_bringup gazebo.launch.py ctrl:=joint_trajectory_controller model:=iiwa7
+```
+
+### 2. Start fake camera TF
+
+In terminal 2:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /home/daun/project/install/setup.bash
+
+ros2 run tf2_ros static_transform_publisher \
+  --x -0.8 \
+  --y 0.0 \
+  --z 0.7 \
+  --roll 3.1416 \
+  --pitch 0.0 \
+  --yaw 3.1416 \
+  --frame-id lbr_link_0 \
+  --child-frame-id fake_camera_link
+```
+
+Alternative transform if the Z axis looks inverted:
+
+```bash
+ros2 run tf2_ros static_transform_publisher \
+  --x -0.8 \
+  --y 0.0 \
+  --z 0.7 \
+  --roll 0.0 \
+  --pitch 3.1416 \
+  --yaw 3.1416 \
+  --frame-id lbr_link_0 \
+  --child-frame-id fake_camera_link
+```
+
+### 3. Start robot vision ROS 2 bridge
+
+In terminal 3:
+
+```bash
+cd /home/daun/project
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+ros2 launch robot_vision_ros2 hand_bridge.launch.py frame_id:=fake_camera_link
+```
+
+### 4. Start camera hand detection app
+
+In terminal 4:
+
+```bash
+cd /home/daun/project/robot_vision_app
+source /home/daun/project/vision_venv/bin/activate
+
+python src/robot_vision_v3.py --config config/config.yaml
+```
+
+### 5. Start live welding replanner
+
+In terminal 5:
+
+```bash
+cd /home/daun/project
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+ros2 run my_robot_control welding_replanner
+```
+
+Expected output:
+
+```text
+live_welding_replanner started
+Waiting for robot data...
+Sending initial welding trajectory
+Trajectory accepted
+HAND TOO CLOSE
+Cancel requested
+Sending new live-replanned trajectory
+Trajectory accepted
+```
+
+## RViz
+
+Use fixed frame:
+
+```text
+lbr_link_0
+```
+
+Useful displays:
+
+```text
+TF
+/live_hand_marker
+/live_replanned_path
+```
+
+Avoid using old marker topics at the same time, especially:
+
+```text
+/hand_obstacle_marker
+/robot_vision/markers
+```
+
+Otherwise two hand markers may appear in different positions.
+
+## Important Topics
+
+Hand input:
+
+```text
+/robot_vision/hands
+```
+
+Live hand marker:
+
+```text
+/live_hand_marker
+```
+
+Live replanned path:
+
+```text
+/live_replanned_path
+```
+
+Robot controller action:
 
 ```text
 /lbr/joint_trajectory_controller/follow_joint_trajectory
 ```
 
-Run the trajectory:
+MoveIt IK service:
+
+```text
+/lbr/compute_ik
+```
+
+## Debug Commands
+
+Check ROS topics:
 
 ```bash
-cd ~/project
-source /opt/ros/jazzy/setup.bash
-source ~/prj/lbr-stack/install/setup.bash
-source install/setup.bash
-ros2 run my_robot_control welding_line_ik --ros-args -p execute:=true
+ros2 topic list | grep -E "robot_vision|live|hand"
 ```
 
-## Main file
-
-The main script is:
+Check controller status:
 
 ```bash
-src/my_robot_control/my_robot_control/welding_line_ik.py
+ros2 control list_controllers
 ```
 
-Important parameters:
+Check TF:
 
-```python
-self.start_xyz = [-0.45, -0.20, 0.45]
-self.end_xyz = [-0.45, 0.20, 0.45]
-self.num_points = 40
-self.total_time_sec = 12.0
+```bash
+ros2 run tf2_ros tf2_echo lbr_link_0 fake_camera_link
 ```
 
-Tool orientation is configured in the same file through the orientation settings / quaternion logic.
+Check MoveIt IK service:
+
+```bash
+ros2 service list | grep compute_ik
+```
+
+Check trajectory action:
+
+```bash
+ros2 action list | grep trajectory
+```
+
+## Current Replanning Logic
+
+The live replanner works as follows:
+
+1. The robot starts moving from welding start point A to end point B.
+2. The node reads the detected hand position from `/robot_vision/hands`.
+3. The hand position is transformed from `fake_camera_link` to `lbr_link_0`.
+4. If the hand is too close to the current welding path, the active trajectory is cancelled.
+5. A new detour point C is created.
+6. A new trajectory A → C → B is sent to the robot controller.
+
+This is reactive live replanning with a detour point. It is not a full potential field planner.
 
 ## Notes
 
-* `execute:=false` is the default safety mode. It only calculates IK and visualizes the planned trajectory.
-* `execute:=true` sends the trajectory to the robot controller.
-* Always test in Gazebo before running on real hardware.
-* Do not commit `build/`, `install/`, or `log/`.
+Generated folders are ignored by git:
+
+```text
+build/
+install/
+log/
+vision_venv/
+```
+
+Large model files and datasets should not be committed directly. Use release assets, external storage, or Git LFS if needed.
