@@ -1,38 +1,19 @@
-# Robot Vision Welding Replanner
+# Robot Vision Live Welding Replanner
 
-ROS 2 Jazzy project for KUKA LBR / iiwa7 welding trajectory visualization and live obstacle-aware replanning using hand detection from a camera.
+ROS 2 Jazzy project for live welding trajectory replanning with KUKA LBR / iiwa7, MoveIt, Gazebo, RViz and camera-based hand detection.
 
-The system connects:
+The robot follows an initial welding path. If a hand is detected too close to the path, the active trajectory is cancelled and a new avoidance trajectory is sent to the robot controller.
 
-* KUKA LBR / iiwa7 simulation in Gazebo
+## Main Components
+
+* KUKA LBR / iiwa7 simulation
 * MoveIt IK service
 * ROS 2 hand detection bridge
+* camera-based hand detection app
 * live welding trajectory replanner
-* RViz visualization of hand position and replanned path
+* RViz visualization
 
-## Workspace
-
-Main ROS 2 workspace:
-
-```bash
-/home/daun/project
-```
-
-KUKA LBR stack workspace:
-
-```bash
-/home/daun/dep/lbr-stack
-```
-
-Robot vision app:
-
-```bash
-/home/daun/project/robot_vision_app
-```
-
-## Packages
-
-This repository contains:
+## Repository Structure
 
 ```text
 src/my_robot_control
@@ -41,30 +22,38 @@ src/robot_vision_ros2
 robot_vision_app
 ```
 
-Main nodes:
+## Requirements
+
+This project uses:
+
+* Ubuntu 24.04
+* ROS 2 Jazzy
+* KUKA LBR ROS 2 stack
+* Gazebo
+* MoveIt
+* Python 3
+* OpenCV / MediaPipe / Ultralytics for vision
+
+The Python dependencies for the camera detection app are listed in:
 
 ```text
-my_robot_control/welding_replanner
-my_robot_control/live_welding_replanner
-robot_vision_ros2/hand_bridge.launch.py
+robot_vision_app/requirements.txt
 ```
 
-At the moment, `welding_replanner` entry point runs the live welding replanner.
+## Build ROS 2 Workspace
 
-## Build
+From the root of this repository:
 
 ```bash
-cd /home/daun/project
 source /opt/ros/jazzy/setup.bash
 
 colcon build --symlink-install
 source install/setup.bash
 ```
 
-For rebuilding only the control package:
+Rebuild only the control package:
 
 ```bash
-cd /home/daun/project
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 
@@ -72,27 +61,46 @@ colcon build --symlink-install --packages-select my_robot_control
 source install/setup.bash
 ```
 
-## Full Run Procedure
+## Install Python Dependencies for Vision App
 
-### 1. Start KUKA / Gazebo / MoveIt
-
-In terminal 1:
+Run this from the root of this repository:
 
 ```bash
-cd /home/daun/dep/lbr-stack
+python3 -m venv vision_venv
+source vision_venv/bin/activate
+
+pip install --upgrade pip
+pip install -r robot_vision_app/requirements.txt
+```
+
+The virtual environment folder should not be committed to git:
+
+```text
+vision_venv/
+```
+
+## Run
+
+Open separate terminals for each step.
+
+## 1. Start KUKA / Gazebo / MoveIt
+
+Run this from the KUKA LBR stack workspace:
+
+```bash
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 
 ros2 launch lbr_bringup gazebo.launch.py ctrl:=joint_trajectory_controller model:=iiwa7
 ```
 
-### 2. Start fake camera TF
+## 2. Start Fake Camera TF
 
-In terminal 2:
+Run this from the root of this repository:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-source /home/daun/project/install/setup.bash
+source install/setup.bash
 
 ros2 run tf2_ros static_transform_publisher \
   --x -0.8 \
@@ -108,6 +116,9 @@ ros2 run tf2_ros static_transform_publisher \
 Alternative transform if the Z axis looks inverted:
 
 ```bash
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
 ros2 run tf2_ros static_transform_publisher \
   --x -0.8 \
   --y 0.0 \
@@ -119,35 +130,51 @@ ros2 run tf2_ros static_transform_publisher \
   --child-frame-id fake_camera_link
 ```
 
-### 3. Start robot vision ROS 2 bridge
+## 3. Start Robot Vision ROS 2 Bridge
 
-In terminal 3:
+From the root of this repository:
 
 ```bash
-cd /home/daun/project
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 
 ros2 launch robot_vision_ros2 hand_bridge.launch.py frame_id:=fake_camera_link
 ```
 
-### 4. Start camera hand detection app
+This bridge publishes detected hand data to ROS 2.
 
-In terminal 4:
+Main topic:
+
+```text
+/robot_vision/hands
+```
+
+## 4. Start Camera Hand Detection App
+
+From the root of this repository:
 
 ```bash
-cd /home/daun/project/robot_vision_app
-source /home/daun/project/vision_venv/bin/activate
+cd robot_vision_app
+source ../vision_venv/bin/activate
 
 python src/robot_vision_v3.py --config config/config.yaml
 ```
 
-### 5. Start live welding replanner
-
-In terminal 5:
+If dependencies are not installed yet, run this first from the repository root:
 
 ```bash
-cd /home/daun/project
+python3 -m venv vision_venv
+source vision_venv/bin/activate
+
+pip install --upgrade pip
+pip install -r robot_vision_app/requirements.txt
+```
+
+## 5. Start Live Welding Replanner
+
+From the root of this repository:
+
+```bash
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 
@@ -183,62 +210,37 @@ TF
 /live_replanned_path
 ```
 
-Avoid using old marker topics at the same time, especially:
+Do not enable old marker topics at the same time:
 
 ```text
 /hand_obstacle_marker
 /robot_vision/markers
 ```
 
-Otherwise two hand markers may appear in different positions.
+Otherwise two hand markers may appear.
 
-## Important Topics
+## Useful Commands
 
-Hand input:
-
-```text
-/robot_vision/hands
-```
-
-Live hand marker:
-
-```text
-/live_hand_marker
-```
-
-Live replanned path:
-
-```text
-/live_replanned_path
-```
-
-Robot controller action:
-
-```text
-/lbr/joint_trajectory_controller/follow_joint_trajectory
-```
-
-MoveIt IK service:
-
-```text
-/lbr/compute_ik
-```
-
-## Debug Commands
-
-Check ROS topics:
+Check hand and replanning topics:
 
 ```bash
 ros2 topic list | grep -E "robot_vision|live|hand"
 ```
 
-Check controller status:
+Check robot controllers:
 
 ```bash
 ros2 control list_controllers
 ```
 
-Check TF:
+Expected active controllers include:
+
+```text
+joint_state_broadcaster
+joint_trajectory_controller
+```
+
+Check fake camera TF:
 
 ```bash
 ros2 run tf2_ros tf2_echo lbr_link_0 fake_camera_link
@@ -256,28 +258,68 @@ Check trajectory action:
 ros2 action list | grep trajectory
 ```
 
-## Current Replanning Logic
+Check hand messages:
 
-The live replanner works as follows:
+```bash
+ros2 topic echo /robot_vision/hands
+```
+
+## Replanning Logic
 
 1. The robot starts moving from welding start point A to end point B.
-2. The node reads the detected hand position from `/robot_vision/hands`.
+2. The node reads hand position from `/robot_vision/hands`.
 3. The hand position is transformed from `fake_camera_link` to `lbr_link_0`.
-4. If the hand is too close to the current welding path, the active trajectory is cancelled.
-5. A new detour point C is created.
+4. If the hand is too close to the welding path, the current trajectory is cancelled.
+5. A detour point C is generated.
 6. A new trajectory A → C → B is sent to the robot controller.
 
 This is reactive live replanning with a detour point. It is not a full potential field planner.
 
-## Notes
+## Important Notes
 
-Generated folders are ignored by git:
+The live replanner currently uses:
+
+```text
+/robot_vision/hands
+/live_hand_marker
+/live_replanned_path
+/lbr/compute_ik
+/lbr/joint_trajectory_controller/follow_joint_trajectory
+```
+
+The old obstacle marker node should not be launched together with the live replanner, otherwise duplicate hand markers may appear in RViz.
+
+## Git Notes
+
+Do not commit generated or local files:
 
 ```text
 build/
 install/
 log/
 vision_venv/
+*.zip
+*.bag
+*.db3
+*.mcap
 ```
 
-Large model files and datasets should not be committed directly. Use release assets, external storage, or Git LFS if needed.
+Large model files should either be ignored or stored with Git LFS.
+
+If model weights are stored with Git LFS:
+
+```bash
+git lfs install
+git lfs track "robot_vision_app/models/*.pt"
+git lfs track "robot_vision_app/models/*.pth"
+git lfs track "robot_vision_app/models/*.onnx"
+git lfs track "robot_vision_app/models/*.engine"
+```
+
+Then add:
+
+```bash
+git add .gitattributes
+git add -f robot_vision_app/models
+```
+
