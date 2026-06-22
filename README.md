@@ -6,12 +6,12 @@ The robot follows an initial welding path. If a hand is detected too close to th
 
 ## Main Components
 
-* KUKA LBR / iiwa7 simulation
+* KUKA LBR / iiwa7 in Gazebo mode
 * MoveIt IK service
+* RViz visualization
 * ROS 2 hand detection bridge
 * camera-based hand detection app
 * live welding trajectory replanner
-* RViz visualization
 
 ## Repository Structure
 
@@ -31,6 +31,7 @@ This project uses:
 * KUKA LBR ROS 2 stack
 * Gazebo
 * MoveIt
+* RViz
 * Python 3
 * OpenCV / MediaPipe / Ultralytics for vision
 
@@ -83,9 +84,17 @@ vision_venv/
 
 Open separate terminals for each step.
 
-## 1. Start KUKA / Gazebo / MoveIt
+The launch order is important:
 
-Run this from the KUKA LBR stack workspace:
+1. KUKA in Gazebo mode with MoveIt and RViz
+2. fake camera TF
+3. robot vision ROS 2 bridge
+4. camera hand detection app
+5. live welding replanner
+
+## 1. Start KUKA in Gazebo Mode with MoveIt and RViz
+
+Run this from the KUKA LBR stack workspace.
 
 ```bash
 source /opt/ros/jazzy/setup.bash
@@ -94,7 +103,84 @@ source install/setup.bash
 ros2 launch lbr_bringup gazebo.launch.py ctrl:=joint_trajectory_controller model:=iiwa7
 ```
 
-## 2. Start Fake Camera TF
+This step must start the robot in Gazebo mode and provide MoveIt services.
+
+Important things that should be available after this step:
+
+```text
+Gazebo simulation
+RViz
+MoveIt
+/lbr/compute_ik
+/lbr/joint_states
+/lbr/joint_trajectory_controller/follow_joint_trajectory
+```
+
+Check controllers:
+
+```bash
+ros2 control list_controllers
+```
+
+Expected active controllers include:
+
+```text
+joint_state_broadcaster
+joint_trajectory_controller
+```
+
+Check MoveIt IK service:
+
+```bash
+ros2 service list | grep compute_ik
+```
+
+Expected:
+
+```text
+/lbr/compute_ik
+```
+
+Check trajectory action:
+
+```bash
+ros2 action list | grep trajectory
+```
+
+Expected:
+
+```text
+/lbr/joint_trajectory_controller/follow_joint_trajectory
+```
+
+## 2. Configure RViz
+
+RViz should be opened before starting the live replanner.
+
+Use fixed frame:
+
+```text
+lbr_link_0
+```
+
+Useful displays:
+
+```text
+TF
+/live_hand_marker
+/live_replanned_path
+```
+
+Do not enable old marker topics at the same time:
+
+```text
+/hand_obstacle_marker
+/robot_vision/markers
+```
+
+Otherwise two hand markers may appear.
+
+## 3. Start Fake Camera TF
 
 Run this from the root of this repository:
 
@@ -130,7 +216,13 @@ ros2 run tf2_ros static_transform_publisher \
   --child-frame-id fake_camera_link
 ```
 
-## 3. Start Robot Vision ROS 2 Bridge
+Check TF:
+
+```bash
+ros2 run tf2_ros tf2_echo lbr_link_0 fake_camera_link
+```
+
+## 4. Start Robot Vision ROS 2 Bridge
 
 From the root of this repository:
 
@@ -149,7 +241,7 @@ Main topic:
 /robot_vision/hands
 ```
 
-## 4. Start Camera Hand Detection App
+## 5. Start Camera Hand Detection App
 
 From the root of this repository:
 
@@ -170,7 +262,15 @@ pip install --upgrade pip
 pip install -r robot_vision_app/requirements.txt
 ```
 
-## 5. Start Live Welding Replanner
+Check that hand data is published:
+
+```bash
+ros2 topic echo /robot_vision/hands
+```
+
+## 6. Start Live Welding Replanner
+
+Start this only after Gazebo, MoveIt, RViz, TF and hand detection are running.
 
 From the root of this repository:
 
@@ -194,31 +294,6 @@ Sending new live-replanned trajectory
 Trajectory accepted
 ```
 
-## RViz
-
-Use fixed frame:
-
-```text
-lbr_link_0
-```
-
-Useful displays:
-
-```text
-TF
-/live_hand_marker
-/live_replanned_path
-```
-
-Do not enable old marker topics at the same time:
-
-```text
-/hand_obstacle_marker
-/robot_vision/markers
-```
-
-Otherwise two hand markers may appear.
-
 ## Useful Commands
 
 Check hand and replanning topics:
@@ -231,13 +306,6 @@ Check robot controllers:
 
 ```bash
 ros2 control list_controllers
-```
-
-Expected active controllers include:
-
-```text
-joint_state_broadcaster
-joint_trajectory_controller
 ```
 
 Check fake camera TF:
@@ -289,5 +357,5 @@ The live replanner currently uses:
 
 The old obstacle marker node should not be launched together with the live replanner, otherwise duplicate hand markers may appear in RViz.
 
-
+```
 
