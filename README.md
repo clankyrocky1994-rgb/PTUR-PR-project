@@ -289,37 +289,5 @@ The live replanner currently uses:
 
 The old obstacle marker node should not be launched together with the live replanner, otherwise duplicate hand markers may appear in RViz.
 
-## Git Notes
 
-Do not commit generated or local files:
-
-```text
-build/
-install/
-log/
-vision_venv/
-*.zip
-*.bag
-*.db3
-*.mcap
-```
-
-Large model files should either be ignored or stored with Git LFS.
-
-If model weights are stored with Git LFS:
-
-```bash
-git lfs install
-git lfs track "robot_vision_app/models/*.pt"
-git lfs track "robot_vision_app/models/*.pth"
-git lfs track "robot_vision_app/models/*.onnx"
-git lfs track "robot_vision_app/models/*.engine"
-```
-
-Then add:
-
-```bash
-git add .gitattributes
-git add -f robot_vision_app/models
-```
 
