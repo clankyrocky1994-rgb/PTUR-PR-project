@@ -1,0 +1,4 @@
+[submodule "src/lbr_fri_ros2_stack"]
+	path = src/lbr_fri_ros2_stack
+	url = https://github.com/lbr-stack/lbr_fri_ros2_stack.git
+	branch = jazzy
