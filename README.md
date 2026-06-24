@@ -1,6 +1,10 @@
 # PTUR-PR Project
 ## Clone
 
+![video](media/IMG_2218.gif)
+
+![video](media/IMG_2219.gif)
+
 ```bash
 git clone --recurse-submodules https://github.com/clankyrocky1994-rgb/PTUR-PR-project.git
 cd PTUR-PR-project
