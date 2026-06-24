@@ -1,61 +1,86 @@
-# PTUR-PR Project
+# PTUR Project 
 
-## Video implementation
+"Динамический учет препятствий в рабочей зоне iiwa на основе зрения: корректировка движения без остановки процесса"
 
-![video](media/IMG_2218.gif)
+В данном проекте реализуется система динамического перепланирования траектории робота KUKA LBR / iiwa7 в ROS 2 Jazzy. Робот выполняет имитацию сварочного движения в Gazebo, а vision-модуль с камеры отслеживает появление руки рядом с траекторией. При обнаружении опасного сближения текущая траектория отменяется, строится обходной путь, и новая траектория отправляется в контроллер робота.
 
-![video](media/IMG_2219.gif)
 
-## Clone
+## Клонирование
 
 ```bash
 git clone --recurse-submodules https://github.com/clankyrocky1994-rgb/PTUR-PR-project.git
 cd PTUR-PR-project
 ```
 
-If the repository was cloned without submodules:
+Если репозиторий был склонирован без сабмодулей:
 
 ```bash
 git submodule update --init --recursive
-
 ```
 
-Build Docker image
+## Сборка Docker-образа
 
 ```bash
 docker compose build
 ```
-Run Docker container
+
+Если нужно пересобрать образ полностью с нуля:
+
+```bash
+docker compose build --no-cache
+```
+
+## Запуск Docker-контейнера
+
+Для запуска контейнера:
+
+```bash
+docker compose run --rm ptur-pr
+```
+
+Для запуска GUI-приложений, например Gazebo или RViz:
 
 ```bash
 xhost +local:docker
 docker compose run --rm ptur-pr
 ```
 
-Build ROS 2 workspace inside Docker
+## Сборка ROS 2 workspace внутри Docker
+
+ROS 2 workspace собирается автоматически во время сборки Docker-образа.
+
+После входа в контейнер достаточно выполнить:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
+source /workspace/install/setup.bash
+```
+
+Если нужно вручную пересобрать workspace внутри контейнера:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+rm -rf build install log
 colcon build
 source install/setup.bash
 ```
 
 # Robot Vision Live Welding Replanner
 
-ROS 2 Jazzy project for live welding trajectory replanning with KUKA LBR / iiwa7, MoveIt, Gazebo, RViz and camera-based hand detection.
+ROS 2 Jazzy проект для динамического перепланирования сварочной траектории с использованием KUKA LBR / iiwa7, MoveIt, Gazebo, RViz и детекции руки с камеры.
 
-The robot follows an initial welding path. If a hand is detected too close to the path, the active trajectory is cancelled and a new avoidance trajectory is sent to the robot controller.
+Робот следует по начальной сварочной траектории. Если рука обнаруживается слишком близко к траектории, активное движение отменяется, после чего строится и отправляется новая обходная траектория.
 
-## Main Components
+## Основные компоненты
 
-* KUKA LBR / iiwa7 in Gazebo mode
+* KUKA LBR / iiwa7 в режиме Gazebo
 * MoveIt IK service
-* RViz visualization
-* ROS 2 hand detection bridge
-* camera-based hand detection app
+* визуализация в RViz
+* ROS 2 bridge для hand detection
+* приложение детекции руки с камеры
 * live welding trajectory replanner
 
-## Repository Structure
+## Структура репозитория
 
 ```text
 src/my_robot_control
@@ -64,9 +89,9 @@ src/robot_vision_ros2
 robot_vision_app
 ```
 
-## Requirements
+## Требования
 
-This project uses:
+Проект запускается через Docker. Docker-образ содержит основное окружение:
 
 * Ubuntu 24.04
 * ROS 2 Jazzy
@@ -75,79 +100,93 @@ This project uses:
 * MoveIt
 * RViz
 * Python 3
-* OpenCV / MediaPipe / Ultralytics for vision
+* OpenCV / MediaPipe / Ultralytics для vision app
 
-The Python dependencies for the camera detection app are listed in:
+## Сборка ROS 2 Workspace
 
-```text
-robot_vision_app/requirements.txt
+Если Docker-образ уже собран, ROS 2 workspace внутри контейнера уже должен быть собран автоматически.
+
+Для подключения окружения внутри контейнера:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /workspace/install/setup.bash
 ```
 
-## Build ROS 2 Workspace
-
-From the root of this repository:
+Для ручной пересборки workspace внутри контейнера:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
 
-colcon build --symlink-install
+rm -rf build install log
+colcon build
+
 source install/setup.bash
 ```
 
-Rebuild only the control package:
+Пересборка только пакета управления:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-source install/setup.bash
+source /workspace/install/setup.bash
 
-colcon build --symlink-install --packages-select my_robot_control
+colcon build --packages-select my_robot_control
 source install/setup.bash
 ```
 
-## Install Python Dependencies for Vision App
+## Установка Python-зависимостей для Vision App
 
-Run this from the root of this repository:
-
-```bash
-python3 -m venv vision_venv
-source vision_venv/bin/activate
-
-pip install --upgrade pip
-pip install -r robot_vision_app/requirements.txt
-```
-
-The virtual environment folder should not be committed to git:
+В Docker-образе Python-зависимости устанавливаются автоматически в отдельное виртуальное окружение:
 
 ```text
-vision_venv/
+/opt/vision_venv
 ```
 
-## Run
+Для активации окружения внутри контейнера:
 
-Open separate terminals for each step.
+```bash
+source /opt/vision_venv/bin/activate
+```
 
-The launch order is important:
+Проверка зависимостей:
 
-1. KUKA in Gazebo mode with MoveIt and RViz
+```bash
+source /opt/vision_venv/bin/activate
+python3 -c "import cv2; import torch; import ultralytics; print('vision ok')"
+```
+
+## Запуск
+
+Откройте отдельные терминалы для каждого шага.
+
+Порядок запуска важен:
+
+1. KUKA в режиме Gazebo с MoveIt и RViz
 2. fake camera TF
 3. robot vision ROS 2 bridge
 4. camera hand detection app
 5. live welding replanner
 
-## 1. Start KUKA in Gazebo Mode with MoveIt and RViz
+Для каждого нового терминала нужно запустить контейнер:
 
-Run this from the KUKA LBR stack workspace.
+```bash
+docker compose run --rm ptur-pr
+```
+
+## 1. Запуск KUKA в Gazebo Mode с MoveIt и RViz
+
+Внутри контейнера:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-source install/setup.bash
+source /workspace/install/setup.bash
 
 ros2 launch lbr_bringup gazebo.launch.py ctrl:=joint_trajectory_controller model:=iiwa7
 ```
 
-This step must start the robot in Gazebo mode and provide MoveIt services.
+Этот шаг запускает робота в Gazebo mode и поднимает необходимые MoveIt-сервисы.
 
-Important things that should be available after this step:
+После этого должны быть доступны:
 
 ```text
 Gazebo simulation
@@ -158,59 +197,61 @@ MoveIt
 /lbr/joint_trajectory_controller/follow_joint_trajectory
 ```
 
-Check controllers:
+Проверка контроллеров:
 
 ```bash
 ros2 control list_controllers
 ```
 
-Expected active controllers include:
+Ожидаемые активные контроллеры:
 
 ```text
 joint_state_broadcaster
 joint_trajectory_controller
 ```
 
-Check MoveIt IK service:
+Проверка MoveIt IK service:
 
 ```bash
 ros2 service list | grep compute_ik
 ```
 
-Expected:
+Ожидаемый результат:
 
 ```text
 /lbr/compute_ik
 ```
 
-Check trajectory action:
+Проверка trajectory action:
 
 ```bash
 ros2 action list | grep trajectory
 ```
 
-Expected:
+Ожидаемый результат:
 
 ```text
 /lbr/joint_trajectory_controller/follow_joint_trajectory
 ```
 
-## 2. Configure RViz
+## 2. Настройка RViz
 
-RViz should be opened before starting the live replanner.
+RViz должен быть открыт до запуска live replanner.
+
 ```bash
 source /opt/ros/jazzy/setup.bash
-source install/setup.bash
+source /workspace/install/setup.bash
+
 ros2 launch lbr_bringup move_group.launch.py model:=iiwa7 mode:=gazebo rviz:=true
 ```
 
-Use fixed frame:
+Fixed frame:
 
 ```text
 lbr_link_0
 ```
 
-Useful displays:
+Полезные displays:
 
 ```text
 TF
@@ -218,22 +259,13 @@ TF
 /live_replanned_path
 ```
 
-Do not enable old marker topics at the same time:
+## 3. Запуск Fake Camera TF
 
-```text
-/hand_obstacle_marker
-/robot_vision/markers
-```
-
-Otherwise two hand markers may appear.
-
-## 3. Start Fake Camera TF
-
-Run this from the root of this repository:
+Внутри контейнера:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-source install/setup.bash
+source /workspace/install/setup.bash
 
 ros2 run tf2_ros static_transform_publisher \
   --x -0.8 \
@@ -246,11 +278,11 @@ ros2 run tf2_ros static_transform_publisher \
   --child-frame-id fake_camera_link
 ```
 
-Alternative transform if the Z axis looks inverted:
+Альтернативный transform, если ось Z перевёрнута:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-source install/setup.bash
+source /workspace/install/setup.bash
 
 ros2 run tf2_ros static_transform_publisher \
   --x -0.8 \
@@ -262,73 +294,65 @@ ros2 run tf2_ros static_transform_publisher \
   --frame-id lbr_link_0 \
   --child-frame-id fake_camera_link
 ```
+При запускке на реальном роботе нужно проводить Eye-hand калибровку
 
-Check TF:
+Полезная утилита для проведения калибровки
 
-```bash
-ros2 run tf2_ros tf2_echo lbr_link_0 fake_camera_link
-```
+[Здесь](https://github.com/AndrejOrsula/moveit2_calibration)
 
-## 4. Start Robot Vision ROS 2 Bridge
+Проверка TF:
 
-From the root of this repository:
+
+## 4. Запуск Robot Vision ROS 2 Bridge
+
+Внутри контейнера:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-source install/setup.bash
+source /workspace/install/setup.bash
 
 ros2 launch robot_vision_ros2 hand_bridge.launch.py frame_id:=fake_camera_link
 ```
 
-This bridge publishes detected hand data to ROS 2.
+Bridge публикует данные обнаруженной руки в ROS 2.
 
-Main topic:
+Основной topic:
 
 ```text
 /robot_vision/hands
 ```
 
-## 5. Start Camera Hand Detection App
+## 5. Запуск Camera Hand Detection App
 
-From the root of this repository:
-
-```bash
-cd robot_vision_app
-source ../vision_venv/bin/activate
-
-python src/robot_vision_v3.py --config config/config.yaml
-```
-
-If dependencies are not installed yet, run this first from the repository root:
+Внутри контейнера:
 
 ```bash
-python3 -m venv vision_venv
-source vision_venv/bin/activate
+cd /workspace/robot_vision_app
+source /opt/vision_venv/bin/activate
 
-pip install --upgrade pip
-pip install -r robot_vision_app/requirements.txt
+python3 src/robot_vision_v3.py --config config/config.yaml
 ```
 
-Check that hand data is published:
+Проверка публикации данных о руке:
 
 ```bash
 ros2 topic echo /robot_vision/hands
 ```
 
-## 6. Start Live Welding Replanner
+## 6. Запуск Live Welding Replanner
 
-Start this only after Gazebo, MoveIt, RViz, TF and hand detection are running.
+Запускайте этот узел только после Gazebo, MoveIt, RViz, TF и hand detection.
 
-From the root of this repository:
+Внутри контейнера:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-source install/setup.bash
+source /workspace/install/setup.bash
 
 ros2 run my_robot_control welding_replanner
 ```
 
-Expected output:
+Ожидаемый вывод:
 
 ```text
 live_welding_replanner started
@@ -341,68 +365,79 @@ Sending new live-replanned trajectory
 Trajectory accepted
 ```
 
-## Useful Commands
+## Полезные команды
 
-Check hand and replanning topics:
+Проверка topics для hand detection и replanning:
 
 ```bash
 ros2 topic list | grep -E "robot_vision|live|hand"
 ```
 
-Check robot controllers:
+Проверка контроллеров робота:
 
 ```bash
 ros2 control list_controllers
 ```
 
-Check fake camera TF:
+Проверка fake camera TF:
 
 ```bash
 ros2 run tf2_ros tf2_echo lbr_link_0 fake_camera_link
 ```
 
-Check MoveIt IK service:
+Проверка MoveIt IK service:
 
 ```bash
 ros2 service list | grep compute_ik
 ```
 
-Check trajectory action:
+Проверка trajectory action:
 
 ```bash
 ros2 action list | grep trajectory
 ```
 
-Check hand messages:
+Проверка сообщений о руке:
 
 ```bash
 ros2 topic echo /robot_vision/hands
 ```
 
-## Replanning Logic
+## Логика перепланирования
 
-1. The robot starts moving from welding start point A to end point B.
-2. The node reads hand position from `/robot_vision/hands`.
-3. The hand position is transformed from `fake_camera_link` to `lbr_link_0`.
-4. If the hand is too close to the welding path, the current trajectory is cancelled.
-5. A detour point C is generated.
-6. A new trajectory A → C → B is sent to the robot controller.
+1. Робот начинает движение от начальной точки сварки A к конечной точке B.
+2. Узел читает позицию руки из `/robot_vision/hands`.
+3. Позиция руки трансформируется из `fake_camera_link` в `lbr_link_0`.
+4. Если рука находится слишком близко к сварочной траектории, текущая траектория отменяется.
+5. Генерируется обходная точка C.
+6. Новая траектория A → C → B отправляется в контроллер робота.
 
-This is reactive live replanning with a detour point. It is not a full potential field planner.
+Это reactive live replanning с обходной точкой.
 
-## Important Notes
+## Видео реализации
 
-The live replanner currently uses:
+![video](media/IMG_2218.gif)
 
-```text
-/robot_vision/hands
-/live_hand_marker
-/live_replanned_path
-/lbr/compute_ik
-/lbr/joint_trajectory_controller/follow_joint_trajectory
-```
+![video](media/IMG_2219.gif)
 
-The old obstacle marker node should not be launched together with the live replanner, otherwise duplicate hand markers may appear in RViz.
+## Цитирование
 
-```
+В проекте используется LBR-Stack. Если вы используете этот проект или LBR-Stack в академической работе, можно ссылаться на:
 
+```bibtex
+@article{Huber2024,
+  doi       = {10.21105/joss.06138},
+  url       = {https://doi.org/10.21105/joss.06138},
+  year      = {2024},
+  publisher = {The Open Journal},
+  volume    = {9},
+  number    = {103},
+  pages     = {6138},
+  author    = {Martin Huber and Christopher E. Mower and Sebastien Ourselin and Tom Vercauteren and Christos Bergeles},
+  title     = {LBR-Stack: ROS 2 and Python Integration of KUKA FRI for Med and IIWA Robots},
+  journal   = {Journal of Open Source Software}
+}
+
+## Лицензия
+
+Этот проект распространяется под лицензией MIT. См. файл [LICENSE](LICENSE).
