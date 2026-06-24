@@ -1,3 +1,29 @@
+# PTUR-PR Project
+## Clone
+'''bash
+git clone --recurse-submodules https://github.com/clankyrocky1994-rgb/PTUR-PR-project.git
+cd PTUR-PR-project
+'''
+
+If the repository was cloned without submodules:
+''bash
+git submodule update --init --recursive
+'''
+Build Docker image
+'''bash
+docker compose build
+'''
+Run Docker container
+'''bash
+xhost +local:docker
+docker compose run --rm ptur-pr
+'''
+Build ROS 2 workspace inside Docker
+'''bash
+source /opt/ros/jazzy/setup.bash
+colcon build
+source install/setup.bash
+'''
 # Robot Vision Live Welding Replanner
 
 ROS 2 Jazzy project for live welding trajectory replanning with KUKA LBR / iiwa7, MoveIt, Gazebo, RViz and camera-based hand detection.
