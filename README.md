@@ -10,6 +10,7 @@ If the repository was cloned without submodules:
 
 ```bash
 git submodule update --init --recursive
+
 ```
 
 Build Docker image
