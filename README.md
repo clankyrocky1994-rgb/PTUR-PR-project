@@ -415,11 +415,11 @@ ros2 topic echo /robot_vision/hands
 
 ### Перенос руки в симуляцию
 
-![video](https://drive.google.com/file/d/13lkDPXtWL_BsITSiLFty5cqxP5G7FmAz/view?usp=sharing)
+![video](DemoOfTF.gif)
 
 ### Пример работы алгоритма
 
-![video](https://drive.google.com/file/d/1Rcw_YYjvrhrlTIrJILRQjpoR_OfGSwuF/view?usp=sharing)
+![video](DemoOfWork.gif)
 
 ## Цитирование
 
