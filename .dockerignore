@@ -1,0 +1,12 @@
+.git
+.gitignore
+build/
+install/
+log/
+vision_venv/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.cache/

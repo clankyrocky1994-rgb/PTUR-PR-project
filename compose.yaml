@@ -1,0 +1,22 @@
+services:
+  ptur-pr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ptur-pr-project:jazzy
+    container_name: ptur-pr-project
+    network_mode: host
+    ipc: host
+    privileged: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - ROS_DOMAIN_ID=0
+    volumes:
+      - .:/workspace
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    devices:
+      - /dev/video0:/dev/video0
+    stdin_open: true
+    tty: true
+    command: bash

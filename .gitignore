@@ -58,3 +58,30 @@ robot_vision_app/*.db3
 # Local env files
 .env
 *.local
+
+# ROS build artifacts
+build/
+install/
+log/
+
+# Python virtual environments
+vision_venv/
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Vision app runtime data
+robot_vision_app/blackbox/
+robot_vision_app/logs/
+robot_vision_app/telemetry/
+
+# LBR dependencies imported by vcs
+src/fri/
+src/lbr_fri_idl/
+src/lbr_iiwa14_r820_description/
+src/lbr_iiwa7_r800_description/
+src/lbr_med14_r820_description/
+src/lbr_med7_r800_description/
