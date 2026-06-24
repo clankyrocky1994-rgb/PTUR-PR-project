@@ -437,7 +437,7 @@ ros2 topic echo /robot_vision/hands
   title     = {LBR-Stack: ROS 2 and Python Integration of KUKA FRI for Med and IIWA Robots},
   journal   = {Journal of Open Source Software}
 }
-
+```
 ## Лицензия
 
 Этот проект распространяется под лицензией MIT. См. файл [LICENSE](LICENSE).
