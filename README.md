@@ -297,9 +297,6 @@ ros2 run tf2_ros static_transform_publisher \
 
 [Здесь](https://github.com/AndrejOrsula/moveit2_calibration)
 
-Проверка TF:
-
-
 ## 4. Запуск Robot Vision ROS 2 Bridge
 
 Внутри контейнера:
